@@ -1,4 +1,4 @@
-# I've compiled the executable binary (its name is "packplanner"). Simply run by below command:
+# I've compiled the executable binary under Ubuntu (its name is "packplanner"). Simply run it by below command.
 ./packplanner < [input_file]
 
 # If you want to build your own, run below command. It should generate "packplanner" binary.

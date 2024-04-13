@@ -2,17 +2,18 @@ package packer
 
 import (
 	"example.com/packplanner/utils"
+	"github.com/golang-collections/collections/stack"
 	"reflect"
 	"testing"
 
 	. "github.com/onsi/gomega"
 )
 
-func isSameTotalWeight(a, b float64) bool {
+func areSameTotalWeight(a, b float64) bool {
 	return utils.PrettyFormatFloat(a, 2) == utils.PrettyFormatFloat(b, 2)
 }
 
-func areSameItemSlice(a, b []*Item) bool {
+func areSameItems(a, b *stack.Stack) bool {
 	return reflect.DeepEqual(a, b)
 }
 
@@ -28,13 +29,13 @@ func areSamePacks(a, b []*Pack) bool {
 		if a[i].MaxLength != b[i].MaxLength {
 			return false
 		}
-		if !isSameTotalWeight(a[i].TotalWeight, b[i].TotalWeight) {
+		if !areSameTotalWeight(a[i].TotalWeight, b[i].TotalWeight) {
 			return false
 		}
 		if a[i].ItemCount != b[i].ItemCount {
 			return false
 		}
-		if !areSameItemSlice(a[i].DistinctItems, b[i].DistinctItems) {
+		if !areSameItems(a[i].DistinctItems, b[i].DistinctItems) {
 			return false
 		}
 	}
@@ -66,27 +67,25 @@ func TestNatural_Basic(t *testing.T) {
 	// Pack Number: 2
 	// 2001,7200,40,11.21
 	// Pack Length: 7200, Pack Weight: 448.4
-	expectedPacks := []*Pack{
-		{
-			ID: 1,
-			DistinctItems: []*Item{
-				{ID: 1001, Length: 6200, Quantity: 30, Weight: 9.653},
-				{ID: 2001, Length: 7200, Quantity: 10, Weight: 11.21},
-			},
-			MaxLength:   7200,
-			TotalWeight: 401.69,
-			ItemCount:   40,
-		},
-		{
-			ID: 2,
-			DistinctItems: []*Item{
-				{ID: 2001, Length: 7200, Quantity: 40, Weight: 11.21},
-			},
-			MaxLength:   7200,
-			TotalWeight: 448.4,
-			ItemCount:   40,
-		},
+	p1 := &Pack{
+		ID:            1,
+		DistinctItems: stack.New(),
+		MaxLength:     7200,
+		TotalWeight:   401.69,
+		ItemCount:     40,
 	}
+	p1.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 30, Weight: 9.653})
+	p1.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 10, Weight: 11.21})
+
+	p2 := &Pack{
+		ID:            2,
+		DistinctItems: stack.New(),
+		MaxLength:     7200,
+		TotalWeight:   448.4,
+		ItemCount:     40,
+	}
+	p2.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 40, Weight: 11.21})
+	expectedPacks := []*Pack{p1, p2}
 
 	packer := NewPacker(sortOrder, maxItems, maxWeight, itemSlice)
 	packs := packer.packItems()
@@ -217,47 +216,45 @@ func TestLongest_Basic(t *testing.T) {
 	// Pack Number: 4
 	// 3001,4800,24,15.33
 	// Pack Length: 4800, Pack Weight: 367.92
-	expectedPacks := []*Pack{
-		{
-			ID: 1,
-			DistinctItems: []*Item{
-				{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364},
-				{ID: 2001, Length: 7200, Quantity: 30, Weight: 11.21},
-			},
-			MaxLength:   9800,
-			TotalWeight: 379.94,
-			ItemCount:   40,
-		},
-		{
-			ID: 2,
-			DistinctItems: []*Item{
-				{ID: 2001, Length: 7200, Quantity: 20, Weight: 11.21},
-				{ID: 1001, Length: 6200, Quantity: 20, Weight: 9.653},
-			},
-			MaxLength:   7200,
-			TotalWeight: 417.26,
-			ItemCount:   40,
-		},
-		{
-			ID: 3,
-			DistinctItems: []*Item{
-				{ID: 1001, Length: 6200, Quantity: 10, Weight: 9.653},
-				{ID: 3001, Length: 4800, Quantity: 26, Weight: 15.33},
-			},
-			MaxLength:   6200,
-			TotalWeight: 495.11,
-			ItemCount:   36,
-		},
-		{
-			ID: 4,
-			DistinctItems: []*Item{
-				{ID: 3001, Length: 4800, Quantity: 24, Weight: 15.33},
-			},
-			MaxLength:   4800,
-			TotalWeight: 367.92,
-			ItemCount:   24,
-		},
+	p1 := &Pack{
+		ID:            1,
+		DistinctItems: stack.New(),
+		MaxLength:     9800,
+		TotalWeight:   379.94,
+		ItemCount:     40,
 	}
+	p1.DistinctItems.Push(&Item{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364})
+	p1.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 30, Weight: 11.21})
+
+	p2 := &Pack{
+		ID:            2,
+		DistinctItems: stack.New(),
+		MaxLength:     7200,
+		TotalWeight:   417.26,
+		ItemCount:     40,
+	}
+	p2.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 20, Weight: 11.21})
+	p2.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 20, Weight: 9.653})
+
+	p3 := &Pack{
+		ID:            3,
+		DistinctItems: stack.New(),
+		MaxLength:     6200,
+		TotalWeight:   495.11,
+		ItemCount:     36,
+	}
+	p3.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 10, Weight: 9.653})
+	p3.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 26, Weight: 15.33})
+
+	p4 := &Pack{
+		ID:            4,
+		DistinctItems: stack.New(),
+		MaxLength:     4800,
+		TotalWeight:   367.92,
+		ItemCount:     24,
+	}
+	p4.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 24, Weight: 15.33})
+	expectedPacks := []*Pack{p1, p2, p3, p4}
 
 	packer := NewPacker(sortOrder, maxItems, maxWeight, itemSlice)
 	packs := packer.packItems()
@@ -299,38 +296,36 @@ func TestLongest_ItemsLengthAreSame(t *testing.T) {
 	// Pack Number: 3
 	// 3001,4800,21,15.33
 	// Pack Length: 4800, Pack Weight: 321.93
-	expectedPacks := []*Pack{
-		{
-			ID: 1,
-			DistinctItems: []*Item{
-				{ID: 2001, Length: 9800, Quantity: 5, Weight: 11.21},
-				{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364},
-				{ID: 1001, Length: 6200, Quantity: 25, Weight: 9.653},
-			},
-			MaxLength:   9800,
-			TotalWeight: 341.02,
-			ItemCount:   40,
-		},
-		{
-			ID: 2,
-			DistinctItems: []*Item{
-				{ID: 1001, Length: 6200, Quantity: 5, Weight: 9.653},
-				{ID: 3001, Length: 4800, Quantity: 29, Weight: 15.33},
-			},
-			MaxLength:   6200,
-			TotalWeight: 492.83,
-			ItemCount:   34,
-		},
-		{
-			ID: 3,
-			DistinctItems: []*Item{
-				{ID: 3001, Length: 4800, Quantity: 21, Weight: 15.33},
-			},
-			MaxLength:   4800,
-			TotalWeight: 321.93,
-			ItemCount:   21,
-		},
+	p1 := &Pack{
+		ID:            1,
+		DistinctItems: stack.New(),
+		MaxLength:     9800,
+		TotalWeight:   341.02,
+		ItemCount:     40,
 	}
+	p1.DistinctItems.Push(&Item{ID: 2001, Length: 9800, Quantity: 5, Weight: 11.21})
+	p1.DistinctItems.Push(&Item{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364})
+	p1.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 25, Weight: 9.653})
+
+	p2 := &Pack{
+		ID:            2,
+		DistinctItems: stack.New(),
+		MaxLength:     6200,
+		TotalWeight:   492.83,
+		ItemCount:     34,
+	}
+	p2.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 5, Weight: 9.653})
+	p2.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 29, Weight: 15.33})
+
+	p3 := &Pack{
+		ID:            3,
+		DistinctItems: stack.New(),
+		MaxLength:     4800,
+		TotalWeight:   321.93,
+		ItemCount:     21,
+	}
+	p3.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 21, Weight: 15.33})
+	expectedPacks := []*Pack{p1, p2, p3}
 
 	packer := NewPacker(sortOrder, maxItems, maxWeight, itemSlice)
 	packs := packer.packItems()
@@ -376,47 +371,45 @@ func TestShortest_Basic(t *testing.T) {
 	// 2001,7200,18,11.21
 	// 4001,9800,10,4.364
 	// Pack Length: 9800, Pack Weight: 245.42
-	expectedPacks := []*Pack{
-		{
-			ID: 1,
-			DistinctItems: []*Item{
-				{ID: 3001, Length: 4800, Quantity: 32, Weight: 15.33},
-			},
-			MaxLength:   4800,
-			TotalWeight: 490.56,
-			ItemCount:   32,
-		},
-		{
-			ID: 2,
-			DistinctItems: []*Item{
-				{ID: 3001, Length: 4800, Quantity: 18, Weight: 15.33},
-				{ID: 1001, Length: 6200, Quantity: 22, Weight: 9.653},
-			},
-			MaxLength:   6200,
-			TotalWeight: 488.31,
-			ItemCount:   40,
-		},
-		{
-			ID: 3,
-			DistinctItems: []*Item{
-				{ID: 1001, Length: 6200, Quantity: 8, Weight: 9.653},
-				{ID: 2001, Length: 7200, Quantity: 32, Weight: 11.21},
-			},
-			MaxLength:   7200,
-			TotalWeight: 435.94,
-			ItemCount:   40,
-		},
-		{
-			ID: 4,
-			DistinctItems: []*Item{
-				{ID: 2001, Length: 7200, Quantity: 18, Weight: 11.21},
-				{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364},
-			},
-			MaxLength:   9800,
-			TotalWeight: 245.42,
-			ItemCount:   28,
-		},
+	p1 := &Pack{
+		ID:            1,
+		DistinctItems: stack.New(),
+		MaxLength:     4800,
+		TotalWeight:   490.56,
+		ItemCount:     32,
 	}
+	p1.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 32, Weight: 15.33})
+
+	p2 := &Pack{
+		ID:            2,
+		DistinctItems: stack.New(),
+		MaxLength:     6200,
+		TotalWeight:   488.31,
+		ItemCount:     40,
+	}
+	p2.DistinctItems.Push(&Item{ID: 3001, Length: 4800, Quantity: 18, Weight: 15.33})
+	p2.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 22, Weight: 9.653})
+
+	p3 := &Pack{
+		ID:            3,
+		DistinctItems: stack.New(),
+		MaxLength:     7200,
+		TotalWeight:   435.94,
+		ItemCount:     40,
+	}
+	p3.DistinctItems.Push(&Item{ID: 1001, Length: 6200, Quantity: 8, Weight: 9.653})
+	p3.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 32, Weight: 11.21})
+
+	p4 := &Pack{
+		ID:            4,
+		DistinctItems: stack.New(),
+		MaxLength:     9800,
+		TotalWeight:   245.42,
+		ItemCount:     28,
+	}
+	p4.DistinctItems.Push(&Item{ID: 2001, Length: 7200, Quantity: 18, Weight: 11.21})
+	p4.DistinctItems.Push(&Item{ID: 4001, Length: 9800, Quantity: 10, Weight: 4.364})
+	expectedPacks := []*Pack{p1, p2, p3, p4}
 
 	packer := NewPacker(sortOrder, maxItems, maxWeight, itemSlice)
 	packs := packer.packItems()

@@ -3,6 +3,7 @@ package packer
 import (
 	"example.com/packplanner/utils"
 	"fmt"
+	"github.com/golang-collections/collections/stack"
 	"sort"
 )
 
@@ -17,7 +18,7 @@ type Item struct {
 // Pack represents a group of items.
 type Pack struct {
 	ID            int
-	DistinctItems []*Item
+	DistinctItems *stack.Stack
 	MaxLength     int
 	TotalWeight   float64
 	ItemCount     int
@@ -61,7 +62,7 @@ func (packer *Packer) packItems() []*Pack {
 	packer.sortItemSliceByOrder()
 
 	packs := make([]*Pack, 0)
-	currentPack := &Pack{ID: 1, MaxLength: 0, TotalWeight: 0.0, ItemCount: 0}
+	currentPack := &Pack{ID: 1, MaxLength: 0, TotalWeight: 0.0, ItemCount: 0, DistinctItems: stack.New()}
 
 	for _, item := range packer.ItemSlice {
 		// If an item's weight exceeds the pack's maximum weight, cannot add it to any pack.
@@ -72,7 +73,7 @@ func (packer *Packer) packItems() []*Pack {
 		for i := 0; i < item.Quantity; i++ {
 			if packer.checkIfExceedLimits(currentPack, item) {
 				packs = append(packs, currentPack)
-				currentPack = &Pack{ID: len(packs) + 1, MaxLength: 0, TotalWeight: 0.0, ItemCount: 0}
+				currentPack = &Pack{ID: len(packs) + 1, MaxLength: 0, TotalWeight: 0.0, ItemCount: 0, DistinctItems: stack.New()}
 			}
 
 			addItemToPack(currentPack, item)
@@ -110,21 +111,36 @@ func addItemToPack(currentPack *Pack, item *Item) {
 		currentPack.MaxLength = item.Length
 	}
 
-	length := len(currentPack.DistinctItems)
-	if length > 0 && currentPack.DistinctItems[length-1].ID == item.ID {
-		currentPack.DistinctItems[length-1].Quantity++
+	top := currentPack.DistinctItems.Peek()
+	if top != nil && top.(*Item).ID == item.ID {
+		top.(*Item).Quantity++
 	} else {
 		newItem := &Item{ID: item.ID, Length: item.Length, Quantity: 1, Weight: item.Weight}
-		currentPack.DistinctItems = append(currentPack.DistinctItems, newItem)
+		currentPack.DistinctItems.Push(newItem)
 	}
+}
+
+// Print stack elements from bottom to top
+func printItems(itemStack *stack.Stack) {
+	if itemStack.Len() == 0 {
+		return
+	}
+
+	topItem := itemStack.Peek().(*Item)
+
+	itemStack.Pop()
+
+	printItems(itemStack)
+
+	fmt.Printf("%d,%d,%d,%s\n", topItem.ID, topItem.Length, topItem.Quantity, utils.PrettyFormatFloat(topItem.Weight, -1))
+
+	itemStack.Push(topItem)
 }
 
 func printPacks(packs []*Pack) {
 	for _, pack := range packs {
 		fmt.Printf("Pack Number: %d\n", pack.ID)
-		for _, item := range pack.DistinctItems {
-			fmt.Printf("%d,%d,%d,%s\n", item.ID, item.Length, item.Quantity, utils.PrettyFormatFloat(item.Weight, -1))
-		}
+		printItems(pack.DistinctItems)
 		fmt.Printf("Pack Length: %d, Pack Weight: %s\n\n", pack.MaxLength, utils.PrettyFormatFloat(pack.TotalWeight, 2))
 	}
 }

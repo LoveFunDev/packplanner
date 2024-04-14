@@ -138,9 +138,13 @@ func printItems(itemStack *stack.Stack) {
 }
 
 func printPacks(packs []*Pack) {
-	for _, pack := range packs {
+	for i, pack := range packs {
+		if i != 0 {
+			fmt.Printf("\n") // empty line between packs
+		}
+
 		fmt.Printf("Pack Number: %d\n", pack.ID)
 		printItems(pack.DistinctItems)
-		fmt.Printf("Pack Length: %d, Pack Weight: %s\n\n", pack.MaxLength, utils.PrettyFormatFloat(pack.TotalWeight, 2))
+		fmt.Printf("Pack Length: %d, Pack Weight: %s\n", pack.MaxLength, utils.PrettyFormatFloat(pack.TotalWeight, 2))
 	}
 }

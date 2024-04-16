@@ -31,3 +31,15 @@ func TestFormatFloat_Basic(t *testing.T) {
 	resultStr = PrettyFormatFloat(num, 3)
 	we.Expect(resultStr).To(Equal("5.988"))
 }
+
+func TestFormatFloat_integer(t *testing.T) {
+	we := NewGomegaWithT(t)
+
+	num := float64(10)
+	resultStr := PrettyFormatFloat(num, -1)
+	we.Expect(resultStr).To(Equal("10"))
+
+	num = float64(200)
+	resultStr = PrettyFormatFloat(num, -1)
+	we.Expect(resultStr).To(Equal("200"))
+}
